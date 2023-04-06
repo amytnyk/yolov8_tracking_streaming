@@ -51,65 +51,49 @@ class YouTubeVideoStreamer:
 
 
 class AiStreamer:
-    def __init__(self, source, model_filename, url, key, width=640, height=480, external_streamer=None, debug=False):
+    def __init__(self, source, model_path, url, key, width=640, height=480, external_streamer=None):
         self.source = source
-        self.model_filename = model_filename
-        self.url = url
-        self.key = key
-        self.width = width
-        self.height = height
-        self.debug = debug
 
         if external_streamer is None:
             external_streamer = YouTubeVideoStreamer
 
-        self.model = YOLO(self.model_filename)
-        self.box_annotator = sv.BoxAnnotator(
-            thickness=2,
-            text_thickness=1,
-            text_scale=0.5
-        )
-
-        self.cap = cv2.VideoCapture(self.source)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-
+        self.model = YOLO(model_path)
+        
         self.streamer = external_streamer(url=url, key=key, width=width, height=height)
         self.streamer.start_streaming()
 
     def stream_frame(self, frame):
-        result = self.model(frame, agnostic_nms=True,
-                            verbose=False,
-                            batch=1)[0]
-        detections = sv.Detections.from_yolov8(result)
-        labels = [
-            f"{self.model.model.names[class_id]} {confidence:0.2f}"
-            for _, confidence, class_id, _
-            in detections
-        ]
-        frame = self.box_annotator.annotate(
-            scene=frame,
-            detections=detections,
-            labels=labels
+        box_annotator = sv.BoxAnnotator(
+            thickness=2,
+            text_thickness=1,
+            text_scale=0.5
         )
+        for result in self.track(source=self.source, stream=True, agnostic_nms=True,
+                                 device=0, verbose=False, batch=1):
+            frame = result.orig_img
+            detections = sv.Detections.from_yolov8(result)
 
-        fps = 1000 / (result.speed['preprocess'] + result.speed['inference'] + result.speed['postprocess'])
+            if result.boxes.id is not None:
+                detections.tracker_id = result.boxes.id.cpu().numpy().astype(int)
 
-        text = f"FPS: {fps:.2f}, Pr: {result.speed['preprocess']:.2f}ms, In: {result.speed['inference']:.2f}ms, Post: {result.speed['postprocess']:.2f}ms"
-        cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
+            labels = [
+                f"{tracker_id} {self.model.model.names[class_id]} {confidence:0.2f}"
+                for _, confidence, class_id, tracker_id
+                in detections
+            ]
 
-        self.streamer.stream_frame(frame)
+            frame = box_annotator.annotate(
+                scene=frame,
+                detections=detections,
+                labels=labels
+            )
 
-    def stop_streaming(self):
-        self.cap.release()
-        self.streamer.stop_streaming()
+            fps = 1000 / (result.speed['preprocess'] + result.speed['inference'] + result.speed['postprocess'])
 
-    def main(self):
-        while True:
-            ret, frame = self.cap.read()
-            self.stream_frame(frame)
+            text = f"FPS: {fps:.2f}, Pr: {result.speed['preprocess']:.2f}ms, In: {result.speed['inference']:.2f}ms, Post: {result.speed['postprocess']:.2f}ms"
+            cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
 
-        self.stop_streaming()
+            self.streamer.stream_frame(frame)
 
 
 class ArgumentsParser:
