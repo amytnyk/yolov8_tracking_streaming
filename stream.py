@@ -86,8 +86,9 @@ class AiStreamer:
             )
             fps = 1000 / (result.speed['preprocess'] + result.speed['inference'] + result.speed['postprocess'])
             text = f"FPS: {fps:.2f}, Pr: {result.speed['preprocess']:.2f}ms, In: {result.speed['inference']:.2f}ms, Post: {result.speed['postprocess']:.2f}ms"
-            cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
+            cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_DUPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
             self.streamer.stream_frame(frame)
+        self.streamer.stop_streaming()
     
     def __del__(self):
         self.streamer.stop_streaming()
