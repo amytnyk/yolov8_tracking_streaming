@@ -71,7 +71,7 @@ class AiStreamer:
         class_exclude = ['traffic light']
         while True:
             self.model = YOLO(self.model_path)
-            classes = [class_id for class_id, class_name in self.model.names if class_name not in class_exclude]
+            classes = [class_id for class_id, class_name in self.model.names.items() if class_name not in class_exclude]
             for result in self.model.track(source=self.source, stream=True, agnostic_nms=True,
                                      device=0, verbose=False, batch=1, classes=classes):
                 frame = result.orig_img
