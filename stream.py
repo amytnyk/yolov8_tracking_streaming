@@ -63,40 +63,34 @@ class AiStreamer:
         self.streamer.start_streaming()
 
     def stream(self):
-        try:
-            box_annotator = sv.BoxAnnotator(
-                thickness=2,
-                text_thickness=1,
-                text_scale=0.5
+        box_annotator = sv.BoxAnnotator(
+            thickness=2,
+            text_thickness=1,
+            text_scale=0.5
+        )
+        for result in self.model.track(source=self.source, stream=True, agnostic_nms=True,
+                                 device=0, verbose=False, batch=1):
+            frame = result.orig_img
+            detections = sv.Detections.from_yolov8(result)
+            if result.boxes.id is not None:
+                detections.tracker_id = result.boxes.id.cpu().numpy().astype(int)
+            labels = [
+                f"{tracker_id} {self.model.model.names[class_id]} {confidence:0.2f}"
+                for _, confidence, class_id, tracker_id
+                in detections
+            ]
+            frame = box_annotator.annotate(
+                scene=frame,
+                detections=detections,
+                labels=labels
             )
-            for result in self.track(source=self.source, stream=True, agnostic_nms=True,
-                                     device=0, verbose=False, batch=1):
-                frame = result.orig_img
-                detections = sv.Detections.from_yolov8(result)
-
-                if result.boxes.id is not None:
-                    detections.tracker_id = result.boxes.id.cpu().numpy().astype(int)
-
-                labels = [
-                    f"{tracker_id} {self.model.model.names[class_id]} {confidence:0.2f}"
-                    for _, confidence, class_id, tracker_id
-                    in detections
-                ]
-
-                frame = box_annotator.annotate(
-                    scene=frame,
-                    detections=detections,
-                    labels=labels
-                )
-
-                fps = 1000 / (result.speed['preprocess'] + result.speed['inference'] + result.speed['postprocess'])
-
-                text = f"FPS: {fps:.2f}, Pr: {result.speed['preprocess']:.2f}ms, In: {result.speed['inference']:.2f}ms, Post: {result.speed['postprocess']:.2f}ms"
-                cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
-
-                self.streamer.stream_frame(frame)
-        except KeyboardInterrupt:
-            self.streamer.stop_streaming()
+            fps = 1000 / (result.speed['preprocess'] + result.speed['inference'] + result.speed['postprocess'])
+            text = f"FPS: {fps:.2f}, Pr: {result.speed['preprocess']:.2f}ms, In: {result.speed['inference']:.2f}ms, Post: {result.speed['postprocess']:.2f}ms"
+            cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2, cv2.LINE_AA)
+            self.streamer.stream_frame(frame)
+    
+    def __del__(self):
+        self.streamer.stop_streaming()
 
 
 class ArgumentsParser:
