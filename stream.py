@@ -57,7 +57,7 @@ class AiStreamer:
         if external_streamer is None:
             external_streamer = YouTubeVideoStreamer
 
-        self.model = YOLO(model_path)
+        self.model_path = model_path
         
         self.streamer = external_streamer(url=url, key=key, width=width, height=height)
         self.streamer.start_streaming()
@@ -69,6 +69,7 @@ class AiStreamer:
             text_scale=0.5
         )
         while True:
+            self.model = YOLO(self.model_path)
             for result in self.model.track(source=self.source, stream=True, agnostic_nms=True,
                                      device=0, verbose=False, batch=1):
                 frame = result.orig_img
