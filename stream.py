@@ -64,7 +64,7 @@ class AiStreamer:
 
     def stream(self):
         box_annotator = sv.BoxAnnotator(
-            thickness=2,
+            thickness=1,
             text_thickness=1,
             text_scale=0.5
         )
