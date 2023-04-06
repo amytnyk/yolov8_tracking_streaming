@@ -40,7 +40,7 @@ class YouTubeVideoStreamer:
                    '-f', 'flv',
                    f'{self.url}/{self.key}']
 
-        self.writer = subprocess.Popen(command, stdin=subprocess.PIPE)
+        self.writer = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL)
 
     def stream_frame(self, frame):
         self.writer.stdin.write(frame.tobytes())
