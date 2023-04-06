@@ -65,7 +65,7 @@ class AiStreamer:
     def stream(self):
         box_annotator = sv.BoxAnnotator(
             thickness=2,
-            text_thickness=.7,
+            text_thickness=1,
             text_scale=0.5
         )
         while True:
@@ -88,7 +88,7 @@ class AiStreamer:
                 )
                 fps = 1000 / (result.speed['preprocess'] + result.speed['inference'] + result.speed['postprocess'])
                 text = f"FPS: {fps:.2f}, Pr: {result.speed['preprocess']:.2f}ms, In: {result.speed['inference']:.2f}ms, Post: {result.speed['postprocess']:.2f}ms"
-                cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_DUPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
+                cv2.putText(frame, text, (10, 50), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
                 self.streamer.stream_frame(frame)
     
     def __del__(self):
