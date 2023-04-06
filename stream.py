@@ -71,11 +71,12 @@ class AiStreamer:
         while True:
             self.model = YOLO(self.model_path)
             for result in self.model.track(source=self.source, stream=True, agnostic_nms=True,
-                                     device=0, verbose=False, batch=1):
+                                     device=0, verbose=False, batch=1, classes=[0, 1, 2, 3, 5, 7]):
                 frame = result.orig_img
                 detections = sv.Detections.from_yolov8(result)
                 if result.boxes.id is not None:
                     detections.tracker_id = result.boxes.id.cpu().numpy().astype(int)
+                detections = detections[(detections.class_id != 60) & (detections.class_id != 0)]
                 labels = [
                     f"{tracker_id} {self.model.model.names[class_id]} {confidence:0.2f}"
                     for _, confidence, class_id, tracker_id
