@@ -113,7 +113,7 @@ class ArgumentsParser:
 if __name__ == "__main__":
     args = ArgumentsParser().parse()
     streamer_ai = AiStreamer(source=args.source,
-                             model_filename=args.model,
+                             model_path=args.model,
                              url=args.url,
                              key=args.key,
                              width=args.width, height=args.height,
