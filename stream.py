@@ -62,7 +62,7 @@ class AiStreamer:
         self.streamer = external_streamer(url=url, key=key, width=width, height=height)
         self.streamer.start_streaming()
 
-    def stream_frame(self, frame):
+    def stream(self):
         box_annotator = sv.BoxAnnotator(
             thickness=2,
             text_thickness=1,
@@ -118,4 +118,4 @@ if __name__ == "__main__":
                              key=args.key,
                              width=args.width, height=args.height,
                              external_streamer=YouTubeVideoStreamer)
-    streamer_ai.main()
+    streamer_ai.stream()
